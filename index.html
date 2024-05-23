@@ -1,22 +1,37 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Bird Migration Visualization</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     <style>
+        /* map element styles */
         #map {
             height: calc(100vh - 82px);
         }
 
         .dot-icon {
-            background-color: rgba(244, 67, 54 , 0.5);
+            background-color: rgba(244, 67, 54, 0.5);
             border-radius: 50%;
         }
 
+        .leaflet-popup-content-wrapper {
+            background-color: #333;
+            color: white;
+        }
+
+        .leaflet-popup-tip {
+            background-color: #333;
+        }
+
+        .leaflet-control {
+            color: white;
+        }
+
+        /* material icon styles */
         .material-symbols-outlined {
             font-variation-settings:
                 'FILL' 0,
@@ -25,6 +40,7 @@
                 'opsz' 24
         }
 
+        /* map control styles */
         .bg-control {
             background-color: #E0E0E0;
         }
@@ -45,8 +61,8 @@
             border-color: #039BE5;
         }
 
-        /* slider knob */
-        /* For webkit browsers (Chrome, Safari) */
+        /* custom slider styles */
+        /* Webkit Browsers (Chrome, Safari) */
         input[type="range"]::-webkit-slider-thumb {
             appearance: none;
             height: 15px;
@@ -56,7 +72,7 @@
             cursor: pointer;
         }
 
-        /* For Firefox */
+        /* Firefox */
         input[type="range"]::-moz-range-thumb {
             height: 15px;
             width: 15px;
@@ -65,7 +81,7 @@
             cursor: pointer;
         }
 
-        /* For IE */
+        /* IE */
         input[type="range"]::-ms-thumb {
             height: 15px;
             width: 15px;
@@ -74,7 +90,7 @@
             cursor: pointer;
         }
 
-        /* Base style for the slider track and thumb */
+        /* Base style for the slider */
         input[type="range"] {
             appearance: none;
             -webkit-appearance: none;
@@ -87,7 +103,6 @@
         }
     </style>
 </head>
-
 <body class="bg-control text-gray-900">
     <div id="map"></div>
     <div class="flex flex-row justify-between space-between items-center">
@@ -98,7 +113,7 @@
                     play_arrow
                 </span></button>
             <button id="pauseButton"
-                class="bg-btnbg hover:bg-btnhoverbg text-white font-bold pb-1 pt-3 px-4 border-b-4 border-btnborder hover:border-btnborder rounded"><span
+                class="bg-btnbg hover:bg-btnhoverbg text-white font-bold pb-1 pt-3 px-4 border-b-4 border-btnborder hover:border-btnborder rounded hidden"><span
                     class="material-symbols-outlined">
                     pause
                 </span></button>
@@ -137,15 +152,22 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- dataset has been defined separately since it's a bit long -->
     <script src="dataset.js"></script>
+    
     <script>
         document.getElementById('pauseButton').hidden = true;
         const birdMigrationData = dataset;
 
-        const map = L.map('map').setView([0, 0], 2);
+        // map is initially set to focus around london, france, 
+        // and algeria since the markers are going to be dropped 
+        // in that area
+        const map = L.map('map').setView([40, 0], 5);
 
+        // using an openstreetmap (a free tile layer)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: ''
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         let markers = [];
@@ -157,20 +179,23 @@
         let startPoint = 0;
         let pointsToVisualize = 1;
 
+        // marker icons
+        // these icons were uploaded to imgur 
+        // and made publicly accessible
         const startIcon = L.icon({
-            iconUrl: 'https://i.imgur.com/Nt3mLl8.png',
-            iconSize: [20, 35],
-            iconAnchor: [0, 35],
+            iconUrl: 'https://i.imgur.com/Mze9mT4.png',
+            iconSize: [50, 50],
+            iconAnchor: [25, 50],
             popupAnchor: [-0, -35]
         });
 
         const endIcon = L.icon({
-            iconUrl: 'https://i.imgur.com/maQH4H7.png',
-            iconSize: [20, 35],
-            iconAnchor: [0, 35],
+            iconUrl: 'https://i.imgur.com/9RpayhP.png',
+            iconSize: [50, 50],
+            iconAnchor: [25, 50],
             popupAnchor: [-0, -35]
         });
-
+        
         const dotIcon = L.divIcon({
             className: 'dot-icon',
             iconSize: [4, 4],
@@ -179,40 +204,48 @@
         let startMarker;
         let endMarker;
 
+        // getDirection converts a given 
+        // angle in degrees to a label
         function getDirection(angle) {
-            if ((angle >= -22.5 && angle < 22.5) || angle === 180 || angle === -180) {
-                return 'East ➡️';
+            if (angle >= -22.5 && angle < 22.5) {
+                return 'North ⬆️';
             } else if (angle >= 22.5 && angle < 67.5) {
                 return 'Northeast ↗️';
             } else if (angle >= 67.5 && angle < 112.5) {
-                return 'North ⬆️';
+                return 'East ➡️';
             } else if (angle >= 112.5 && angle < 157.5) {
-                return 'Northwest ↖️';
+                return 'Southeast ↘️';
             } else if (angle >= 157.5 || angle < -157.5) {
-                return 'West ⬅️';
+                return 'South ⬇️';
             } else if (angle >= -157.5 && angle < -112.5) {
                 return 'Southwest ↙️';
             } else if (angle >= -112.5 && angle < -67.5) {
-                return 'South ⬇️';
+                return 'West ⬅️';
             } else if (angle >= -67.5 && angle < -22.5) {
-                return 'Southeast ↘️';
+                return 'Northwest ↖️';
             } else {
                 return 'Unknown ❓';
             }
         }
 
+        // animateMigration function shows each datapoint
+        // from startPoint till it reaches pointsToVisualize
+        // with appropriate markers and popups
         function animateMigration() {
             if (dataIndex < birdMigrationData.length && dataIndex < startPoint + pointsToVisualize) {
                 const { latitude, longitude, direction, date_time } = birdMigrationData[dataIndex];
-
-                if (dataIndex === birdMigrationData.length - 1) {
-                if (!endMarker) {
+                console.log(dataIndex, startPoint);
+                if (dataIndex === (startPoint + pointsToVisualize) - 1) {
                     endMarker = L.marker([latitude, longitude], { icon: endIcon }).addTo(map);
-                } else {
-                    endMarker.setLatLng([latitude, longitude]);
-                }
-                } else if (dataIndex === 0) {
-                startMarker = L.marker([latitude, longitude], { icon: startIcon }).addTo(map);
+                } else if (dataIndex === startPoint) {
+                    if (startMarker) {
+                        map.removeLayer(startMarker);
+                    }
+
+                    if (endMarker) {
+                        map.removeLayer(endMarker);
+                    }
+                    startMarker = L.marker([latitude, longitude], { icon: startIcon }).addTo(map);
                 }
 
                 let marker = markers[dataIndex - startPoint];
@@ -239,7 +272,7 @@
                 marker.openPopup();
 
                 document.getElementById('slider').value = dataIndex;
-                document.getElementById('dateLabel').textContent = new Date(date_time).toLocaleDateString();
+                document.getElementById('dateLabel').textContent = `📅 ${new Date(date_time).toLocaleDateString()}`;
 
                 dataIndex++;
             } else {
@@ -247,6 +280,7 @@
             }
         }
 
+        // play button event listener
         document.getElementById('playButton').addEventListener('click', () => {
             document.getElementById('playButton').hidden = true;
             document.getElementById('pauseButton').hidden = false;
@@ -277,6 +311,7 @@
             animationInterval = setInterval(animateMigration, speed);
         });
 
+        // pause button event listener
         document.getElementById('pauseButton').addEventListener('click', () => {
             isPaused = true;
             clearInterval(animationInterval);
@@ -284,6 +319,7 @@
             document.getElementById('pauseButton').hidden = true;
         });
 
+        // restart button event listener
         document.getElementById('restartButton').addEventListener('click', () => {
             document.getElementById('playButton').hidden = true;
             document.getElementById('pauseButton').hidden = false;
@@ -310,7 +346,8 @@
             animationInterval = setInterval(animateMigration, speed);
         });
 
-        // Set slider range to start at dataset start date and end at dataset end date
+        // slider range is set to start at dataset 
+        // start date and end at dataset end date
         const startDate = new Date(birdMigrationData[0].date_time);
         const endDate = new Date(birdMigrationData[birdMigrationData.length - 1].date_time);
         const slider = document.getElementById('slider');
@@ -318,26 +355,9 @@
         slider.max = birdMigrationData.length - 1;
         slider.step = 1;
 
-        document.getElementById('slider').addEventListener('input', (event) => {
-            dataIndex = parseInt(event.target.value);
-            markers.forEach((marker, index) => {
-                if (index > dataIndex - startPoint) {
-                    map.removeLayer(marker);
-                }
-            });
-            markers.splice(dataIndex - startPoint + 1);
-            popups.splice(dataIndex - startPoint + 1);
-            polylines.forEach((polyline, index) => {
-                if (index > dataIndex - startPoint - 1) {
-                    map.removeLayer(polyline);
-                }
-            });
-            polylines.splice(dataIndex - startPoint);
-            animateMigration();
-        });
-
-        // toasts
+        // helper toasts
         function initializeToasts() {
+            // trigger toasts on label click where data-message is present
             document.querySelectorAll('label[data-message]').forEach(label => {
                 label.addEventListener('click', () => {
                     const message = label.getAttribute('data-message');
@@ -352,6 +372,7 @@
                 });
             });
 
+            // trigger toasts on div click where data-message is present
             document.querySelectorAll('div[data-message]').forEach(label => {
                 label.addEventListener('click', () => {
                     const message = label.getAttribute('data-message');
@@ -368,8 +389,8 @@
         }
         initializeToasts();
 
+        // set max input based on the length of the dataset
         document.getElementById('startPointInput').max = birdMigrationData.length - 1;
     </script>
 </body>
-
 </html>
