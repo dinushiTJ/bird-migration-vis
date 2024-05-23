@@ -237,6 +237,8 @@
                 console.log(dataIndex, startPoint);
                 if (dataIndex === (startPoint + pointsToVisualize) - 1) {
                     endMarker = L.marker([latitude, longitude], { icon: endIcon }).addTo(map);
+                    document.getElementById('playButton').hidden = false;
+                    document.getElementById('pauseButton').hidden = true;
                 } else if (dataIndex === startPoint) {
                     if (startMarker) {
                         map.removeLayer(startMarker);
