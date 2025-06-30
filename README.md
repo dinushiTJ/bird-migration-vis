@@ -95,6 +95,4 @@ If this project helped you, please ⭐ **star the repository.**
 
 **[🌐 View Live Demo](https://dinushitj.github.io/bird-migration-vis/) | [📖 Documentation](README.md) | [🐛 Report Bug](../../issues)**
 
-*Making complex data beautiful and accessible* 🚀
-
 </div>
