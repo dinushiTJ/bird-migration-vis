@@ -65,14 +65,6 @@ bird-migration-vis
 └── 📖 README.md      # You are here
 ```
 
-## 🎓 Educational Value
-
-Perfect for:
-- **Classrooms** - Teaching animal behavior and migration
-- **Research** - Analyzing movement patterns
-- **Conservation** - Understanding migration corridors
-- **Public Engagement** - Making science accessible
-
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
